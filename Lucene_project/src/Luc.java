@@ -23,7 +23,7 @@ public class Luc {
 
         // Check how many docs are in index
         int index_size = reader.numDocs();
-        System.out.println("In index are "+index_size+" docs. (In solr are 524, should be the same!)\n");
+        System.out.println("In index are "+index_size+" docs. (In solr are 1050, should be the same!)\n");
 
 
         // Create searcher
