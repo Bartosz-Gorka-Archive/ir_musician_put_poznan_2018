@@ -10,7 +10,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lucene-7.2.1/core/lucene-core-7.2.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/lucene-7.2.1/backward-codecs/lucene-backward-codecs-7.2.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -19,7 +19,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lucene-7.2.1/queryparser/lucene-queryparser-7.2.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/lucene-7.2.1/queryparser/lucene-queryparser-7.2.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -28,7 +28,16 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lucene-7.2.1/backward-codecs/lucene-backward-codecs-7.2.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/lucene-7.2.1/core/lucene-core-7.2.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib/opennlp-tools-1.8.3.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
