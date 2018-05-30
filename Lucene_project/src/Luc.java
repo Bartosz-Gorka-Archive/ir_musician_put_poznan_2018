@@ -21,11 +21,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class Luc {
 
-    public static String TOKENIZER_MODEL = "models/en-token.bin";
-    public static String LOCATION_MODEL = "models/en-ner-location.bin";
+    private static String TOKENIZER_MODEL = "models/en-token.bin";
+    private static String LOCATION_MODEL = "models/en-ner-location.bin";
 
     public static void main(String[] args) throws IOException, ParseException {
 
@@ -41,9 +42,11 @@ public class Luc {
         // List for all document
         List<LinkedHashMap<String, List<String>>> document_db = new ArrayList<>();
 
+        // List of music category
+        Map<String, List<String>> category_map = new HashMap<>();
         // Loop over every document
         for (int i = 0; i < reader.maxDoc(); i++) {
-            if (i==19){ // test on small number of docs
+            if (i == 19) { // test on small number of docs
                 break;
             }
             // Hash map for every document
@@ -66,9 +69,14 @@ public class Luc {
             // Obtain title from document and add to hashmap
             String doc_title_value = doc.get("id");
 
+
             // Remove unnecessary data (Link to Category not band or artist)
-            if (doc_title_value.startsWith("https://en.wikipedia.org/wiki/Category:")){
-                System.out.println("Found 'Category' in "+i+" docID -> skip");
+            if (doc_title_value.startsWith("https://en.wikipedia.org/wiki/Category:")) {
+                // Get category map<name, list of part name> from title (url)
+                List<String> tmp_cat_list = new ArrayList<>(extractCategory(doc_title_value));
+                String tmp_cat_key = String.join("_", tmp_cat_list);
+                category_map.put(tmp_cat_key, tmp_cat_list);
+                System.out.println("Found 'Category' in " + i + " docID -> skip");
                 continue;
             }
 
@@ -87,40 +95,95 @@ public class Luc {
             ArrayList<String> doc_locations_list = (ArrayList<String>) locationFinding(tokens);
             doc_hashmap.put("doc_location", doc_locations_list);
 
+            // Get category from tokenize content and add to hashmap (sorted by occurence in category_map -> list)
+            ArrayList<String> doc_category_list = (ArrayList<String>) getBestCategory(tokens, category_map);
+            doc_hashmap.put("doc_category", doc_category_list);
+
+            // Get time (date) from tokenize content and add to hasmap (sorted by occurence)
+            ArrayList<String> doc_times_list = (ArrayList<String>) timeFinding(tokens);
+            doc_hashmap.put("doc_time", doc_times_list);
+
+            // Add document hasmap to global list
             document_db.add(doc_hashmap);
             System.out.println("Processed docID:" + i);
         }
 
         printDocDB(document_db);
 
+        System.out.println(category_map);
 
-        // Create searcher
-        IndexSearcher searcher = new IndexSearcher(reader);
-
-        // Prepare simple query string
-        String querystr = "trip-hop";
-
-        StandardAnalyzer analyzer = new StandardAnalyzer();
-        Query q = new QueryParser("content", analyzer).parse(querystr);
-
-        // Config number of output
-        int hitsPerPage = 5;
-
-        // Search and obtain results
-        TopDocs docs = searcher.search(q, hitsPerPage);
-        ScoreDoc[] hits = docs.scoreDocs;
-
-        System.out.println("Found " + hits.length + " hits.");
-        for (int i = 0; i < hits.length; ++i) {
-            int docId = hits[i].doc;
-            Document d = searcher.doc(docId);
-            System.out.println((i + 1) + ". " + hits[i].score + "\t" + d.get("title") + "\t" + d.get("url"));
-        }
+        /// Old code to search things -> if unnecessary remove
+//        // Create searcher
+//        IndexSearcher searcher = new IndexSearcher(reader);
+//
+//        // Prepare simple query string
+//        String querystr = "trip-hop";
+//
+//        StandardAnalyzer analyzer = new StandardAnalyzer();
+//        Query q = new QueryParser("content", analyzer).parse(querystr);
+//
+//        // Config number of output
+//        int hitsPerPage = 5;
+//
+//        // Search and obtain results
+//        TopDocs docs = searcher.search(q, hitsPerPage);
+//        ScoreDoc[] hits = docs.scoreDocs;
+//
+//        System.out.println("Found " + hits.length + " hits.");
+//        for (int i = 0; i < hits.length; ++i) {
+//            int docId = hits[i].doc;
+//            Document d = searcher.doc(docId);
+//            System.out.println((i + 1) + ". " + hits[i].score + "\t" + d.get("title") + "\t" + d.get("url"));
+//        }
 
     }
 
-    private static String[] tokenization(String text) throws IOException
-    {
+
+    private static List<String> getBestCategory(String[] tokens, Map<String, List<String>> category_map) {
+        // Cast to ArrayList from String[] to count occurence
+        ArrayList<String> tokens_list = new ArrayList<>(Arrays.asList(tokens));
+
+        // Structure to handle occurence of every category
+        Map<String, Integer> category_occurence = new HashMap<>();
+
+        for (Map.Entry<String, List<String>> entry : category_map.entrySet()) {
+            String key = entry.getKey();
+            List<String> value_list = entry.getValue();
+            // Count occurence of every word from category name and get average from it (if category occur, should whole)
+            Integer occurence = 0;
+            for (String x : value_list) {
+                int occur_x = Collections.frequency(tokens_list, x);
+                occurence += occur_x;
+            }
+            // Divide by size of value list (number of string in category name)
+            Integer avg_occurence = occurence / value_list.size();
+
+            // Add to category to hasmap if not equal to zero
+            if (avg_occurence != 0) {
+                category_occurence.put(key, avg_occurence);
+            }
+        }
+
+        // Return sorted list from category hashmap
+        return getSortedListFromHashMap(category_occurence);
+    }
+
+    private static List<String> extractCategory(String text) {
+        // Get name of category like array
+        String[] tmp_cat = text.split(":");
+        String[] tmp_cat2 = tmp_cat[2].split("_");
+        List<String> tmp_cat3 = new ArrayList<>(Arrays.asList(tmp_cat2));
+
+        // Remove know names are not category
+        tmp_cat3.remove("musical");
+        tmp_cat3.remove("music");
+        tmp_cat3.remove("groups");
+        tmp_cat3.remove("A");
+
+        return tmp_cat3;
+    }
+
+    private static String[] tokenization(String text) throws IOException {
         File modelFile = new File(TOKENIZER_MODEL);
         TokenizerModel model = new TokenizerModel(modelFile);
         TokenizerME token = new TokenizerME(model);
@@ -128,38 +191,10 @@ public class Luc {
         return token.tokenize(text);
     }
 
-    private static List<String> locationFinding(String[] tokens) throws IOException{
-        File modelfile = new File(LOCATION_MODEL);
-        TokenNameFinderModel namemodel = new TokenNameFinderModel(modelfile);
-        NameFinderME namefind = new NameFinderME(namemodel);
-        Span[] locations = namefind.find(tokens);
 
-        // Map for count occurence of lcoations and then sort it
-        Map<String,Integer> locations_map = new HashMap<>();
-
-        for(Span x:locations){
-            // New stringbuilder for concatenate location (Ex. South Korea)
-            StringBuilder new_location = new StringBuilder();
-            for(int j=x.getStart();j<x.getEnd();j++){
-                new_location.append(tokens[j]);
-            }
-
-            // Cast to String class (functions below require it)
-            String new_location_string = new_location.toString();
-
-            // If location in map plus one, else add new entry
-            if (locations_map.containsKey(new_location_string)){
-                int temp_counter = locations_map.get(new_location_string);
-                temp_counter++;
-                locations_map.put(new_location_string, temp_counter);
-            } else {
-                locations_map.put(new_location_string, 1);
-            }
-
-        }
-
+    private static List<String> getSortedListFromHashMap(Map<String, Integer> map) {
         // Create array and sort by value
-        Object[] a = locations_map.entrySet().toArray();
+        Object[] a = map.entrySet().toArray();
         Arrays.sort(a, new Comparator() {
             public int compare(Object o1, Object o2) {
                 return ((Map.Entry<String, Integer>) o2).getValue()
@@ -169,12 +204,74 @@ public class Luc {
 
         // Create array of locations in proper order
         // If counter is the same position is like in original text
-        List<String> locations_list = new ArrayList<>();
+        List<String> list = new ArrayList<>();
         for (Object e : a) {
-            locations_list.add(((Map.Entry<String, Integer>) e).getKey());
+            list.add(((Map.Entry<String, Integer>) e).getKey());
+        }
+        return list;
+    }
+
+    private static List<String> locationFinding(String[] tokens) throws IOException {
+        File modelfile = new File(LOCATION_MODEL);
+        TokenNameFinderModel namemodel = new TokenNameFinderModel(modelfile);
+        NameFinderME namefind = new NameFinderME(namemodel);
+        Span[] locations = namefind.find(tokens);
+
+        // Map for count occurence of lcoations and then sort it
+        Map<String, Integer> locations_map = new HashMap<>();
+
+        // Get string from Span[]
+        String[] locations_string = Span.spansToStrings(locations, tokens);
+        ArrayList<String> locations_list = new ArrayList<>(Arrays.asList(locations_string));
+
+        for (String new_location_string : locations_list) {
+
+            // If location in map plus one, else add new entry
+            if (locations_map.containsKey(new_location_string)) {
+                int temp_counter = locations_map.get(new_location_string);
+                temp_counter++;
+                locations_map.put(new_location_string, temp_counter);
+            } else {
+                locations_map.put(new_location_string, 1);
+            }
         }
 
-        return locations_list;
+        return getSortedListFromHashMap(locations_map);
+    }
+
+    private static List<String> timeFinding(String[] tokens) throws IOException {
+        // Cast to ArrayList from String[] to count occurence
+        ArrayList<String> tokens_list = new ArrayList<>(Arrays.asList(tokens));
+
+        // Structure to handle occurence of every category
+        Map<String, Integer> date_occurence_map = new HashMap<>();
+
+        // Create regex for date (XXXX and 'XX)
+        Pattern p_long = Pattern.compile("\\d{4}"); // Ex. 1998
+        Pattern p_short = Pattern.compile("'\\d{2}"); // Ex. '98
+
+        for (String s : tokens_list) {
+            // Obtain date
+            String new_s = null;
+            if (p_long.matcher(s).matches()) {
+                new_s = s;
+            } else if (p_short.matcher(s).matches()) {
+                new_s = s.replace("'", "19"); // Replace apostrof with 19 ('68 > 1968)
+            }
+            // Add proper value to hashmap if new_s is not null
+            if (new_s != null) {
+                // If location in map plus one, else add new entry
+                if (date_occurence_map.containsKey(new_s)) {
+                    int temp_counter = date_occurence_map.get(new_s);
+                    temp_counter++;
+                    date_occurence_map.put(new_s, temp_counter);
+                } else {
+                    date_occurence_map.put(new_s, 1);
+                }
+            }
+
+        }
+        return getSortedListFromHashMap(date_occurence_map);
     }
 
     private static void printDocDB(List<LinkedHashMap<String, List<String>>> document_db) {
