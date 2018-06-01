@@ -1,3 +1,4 @@
+import javafx.util.Pair;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.tokenize.TokenizerME;
@@ -17,8 +18,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.net.URLDecoder;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -27,6 +28,7 @@ public class Luc {
 
     private static String TOKENIZER_MODEL = "models/en-token.bin";
     private static String LOCATION_MODEL = "models/en-ner-location.bin";
+    private static String DB_FILE_NAME = "results/doc_db.ser";
 
     public static void main(String[] args) throws IOException, ParseException {
 
@@ -38,37 +40,187 @@ public class Luc {
         int index_size = reader.numDocs();
         System.out.println("In index are " + index_size + " docs. (In solr are 1050, should be the same!)\n");
 
+        // Create / load documents database
+        List<LinkedHashMap<String, List<Pair<String, Integer>>>> document_db = null;
+        Map<String, List<String>> category_map = null;
+        File f = new File(DB_FILE_NAME); // if we have file with database
 
-        // List for all document
-        List<LinkedHashMap<String, List<String>>> document_db = new ArrayList<>();
+        if (f.exists() && !f.isDirectory()) {
+            // get document_db and category mapping from reader
+            // it is limited only to two values
+            Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> temp = loadDocDB(DB_FILE_NAME);
 
+            // List for all document
+            document_db = temp.getKey();
+
+            // List of music category
+            category_map = temp.getValue();
+
+        } else { // we have no file with database
+
+            // get document_db and category mapping from reader
+            // it is limited only to two values
+            Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> temp = getDocDB(reader);
+
+            // List for all document
+            document_db = temp.getKey();
+
+            // List of music category
+            category_map = temp.getValue();
+
+            System.out.println("__________________________________________________");
+            saveDocDB(temp, DB_FILE_NAME);
+
+        }
+        if (category_map == null || document_db == null) {
+            System.out.println("\n\n----Something goes wrong with create/load documents database----\n\n");
+            System.exit(-1);
+        }
+        System.out.println(">>>> Obtain database and catogry mapping!\n\n");
+
+        exportToCSV(document_db, category_map);
+
+    }
+
+
+    private static void exportToCSV(List<LinkedHashMap<String, List<Pair<String, Integer>>>> document_db, Map<String, List<String>> category_map) throws FileNotFoundException {
+        // One file for every gropus
+        String file_csv_group_cat = "results/group_cat/group_cat.csv";
+        File file_group_cat = new File(file_csv_group_cat);
+        file_group_cat.getParentFile().mkdirs();
+        PrintWriter pw_group_cat = new PrintWriter(file_group_cat);
+        StringBuilder sb_group_cat = new StringBuilder();
+        // Header in csv file
+        sb_group_cat.append("Group");
+        sb_group_cat.append(',');
+        sb_group_cat.append("Best Category");
+
+
+        Map<String,Map<String, Integer>> cat_loc = new HashMap<>();
+        Map<String,Map<String, Integer>> cat_time = new HashMap<>();
+
+        for (LinkedHashMap<String, List<Pair<String, Integer>>> x : document_db) {
+            for (Map.Entry<String, List<Pair<String, Integer>>> y : x.entrySet()) {
+                String key = y.getKey();
+                List<Pair<String, Integer>> value = y.getValue();
+
+
+                // group_name -> category
+                if (key.equals("doc_title")) {
+                    String group_name = URLDecoder.decode(value.get(0).getKey().substring(29 + 1));
+                    String group_best_cat = null;
+                    try {
+                        group_best_cat = x.get("doc_category").get(0).getKey();
+                    } catch (IndexOutOfBoundsException e) {
+                        System.out.println("+++++++++++++++++++++++++++++++++++++++++++++"+group_name);
+                        group_best_cat = "___NONE___";
+                    }
+                    sb_group_cat.append('\n');
+                    sb_group_cat.append(group_name);
+                    sb_group_cat.append(",");
+                    sb_group_cat.append(group_best_cat);
+                }
+
+                // category -> location
+                if (key.equals("doc_category")) {
+                    for (Pair<String, Integer> cat : value) {
+                        String cat_name = cat.getKey();
+
+                        // Get every location with occurence
+                        for (Pair<String, Integer> loc : x.get("doc_location")) {
+                            String location = loc.getKey();
+                            Integer occurence = loc.getValue();
+                            if (cat_loc.containsKey(cat_name)) { // has category inside
+                                // If location in map plus one, else add new entry
+                                if (cat_loc.get(cat_name).containsKey(location)) { // has location inside
+                                    int temp_counter = cat_loc.get(cat_name).get(location);
+                                    temp_counter++;
+                                    cat_loc.get(cat_name).put(location, temp_counter);
+                                } else { // no location inside
+                                    cat_loc.get(cat_name).put(location, occurence);
+                                }
+                            } else { // no category inside
+                                Map<String, Integer> tmp2 = new HashMap<>();
+                                tmp2.put(location, occurence);
+                                cat_loc.put(cat_name, tmp2);
+                            }
+                        }
+
+                        // Get every time with occurence
+                        for (Pair<String, Integer> tim : x.get("doc_time")) {
+                            String time = tim.getKey();
+                            Integer occurence = tim.getValue();
+                            if (cat_time.containsKey(cat_name)) { // has category inside
+                                // If time in map plus one, else add new entry
+                                if (cat_time.get(cat_name).containsKey(time)) { // has time inside
+                                    int temp_counter = cat_time.get(cat_name).get(time);
+                                    temp_counter++;
+                                    cat_time.get(cat_name).put(time, temp_counter);
+                                } else { // no time inside
+                                    cat_time.get(cat_name).put(time, occurence);
+                                }
+                            } else { // no category inside
+                                Map<String, Integer> tmp2 = new HashMap<>();
+                                tmp2.put(time, occurence);
+                                cat_time.put(cat_name, tmp2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        pw_group_cat.write(sb_group_cat.toString());
+        pw_group_cat.close();
+        System.out.println("\n>>> Save to " + file_csv_group_cat+"\n");
+
+        mapExportCSV(cat_loc,"cat_loc","Location");
+        mapExportCSV(cat_time,"cat_time","Year");
+
+    }
+
+    private static void mapExportCSV(Map<String,Map<String,Integer>> map,String name_prefix,String field_name) throws FileNotFoundException {
+
+        for (Map.Entry<String,Map<String,Integer>> x: map.entrySet()) {
+            // One file for every gropus
+            String key = x.getKey();
+            Map<String,Integer> value = x.getValue();
+
+            String file_csv = "results/"+name_prefix+"/"+name_prefix+"_"+key+".csv";
+            File file = new File(file_csv);
+            file.getParentFile().mkdirs();
+            PrintWriter pw = new PrintWriter(file);
+            StringBuilder sb = new StringBuilder();
+            // Header in csv file
+            sb.append(field_name);
+            sb.append(',');
+            sb.append("Occur");
+
+            Map<String,Integer> sorted_value = getSortedMap(value);
+            for (Map.Entry<String, Integer> y: sorted_value.entrySet()) {
+                sb.append("\n");
+                sb.append(y.getKey());
+                sb.append(",");
+                sb.append(y.getValue().toString());
+            }
+
+            pw.write(sb.toString());
+            pw.close();
+            System.out.println(">>> Save to " + file_csv);
+        }
+    }
+    private static Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> getDocDB(IndexReader reader) throws IOException {
+
+        System.out.println("\n>>> Finding category!\n");
         // List of music category
         Map<String, List<String>> category_map = new HashMap<>();
-        // Loop over every document
+
+        // First loop to obtain all category
         for (int i = 0; i < reader.maxDoc(); i++) {
-            if (i == 19) { // test on small number of docs
-                break;
-            }
-            // Hash map for every document
-            LinkedHashMap<String, List<String>> doc_hashmap = new LinkedHashMap<>();
-
-            // Obtain proper document
+            // Read document from index
             Document doc = reader.document(i);
-
-            // Check what fields are in
-            //getAllFields(doc);
-
-            // Create id from iter over loop (next int on every document)
-            String doc_id_value = String.valueOf(i);
-
-            ArrayList<String> doc_id_list = new ArrayList<>();
-            doc_id_list.add(doc_id_value);
-
-            doc_hashmap.put("doc_id", doc_id_list);
 
             // Obtain title from document and add to hashmap
             String doc_title_value = doc.get("id");
-
 
             // Remove unnecessary data (Link to Category not band or artist)
             if (doc_title_value.startsWith("https://en.wikipedia.org/wiki/Category:")) {
@@ -76,13 +228,51 @@ public class Luc {
                 List<String> tmp_cat_list = new ArrayList<>(extractCategory(doc_title_value));
                 String tmp_cat_key = String.join("_", tmp_cat_list);
                 category_map.put(tmp_cat_key, tmp_cat_list);
+                System.out.println("Found 'Category' in " + i + " docID, with name: " + tmp_cat_key);
+            }
+        }
+
+
+        System.out.println("\n>>> Classifying documents!\n");
+        // List for all document
+        List<LinkedHashMap<String, List<Pair<String, Integer>>>> document_db = new ArrayList<>();
+
+        // Second Loop over every document for classify documents
+        for (int i = 0; i < reader.maxDoc(); i++) {
+
+            // To not collect all documents (for test)
+//            if (i == 19) { // test on small number of docs
+//              break;
+//            }
+
+            // Hash map for every document
+            LinkedHashMap<String, List<Pair<String, Integer>>> doc_hashmap = new LinkedHashMap<>();
+
+            // Obtain proper document
+            Document doc = reader.document(i);
+
+            // Check what fields are in
+//            getAllFields(doc);
+
+            // Create id from iter over loop (next int on every document)
+            String doc_id_value = String.valueOf(i);
+
+            ArrayList<Pair<String, Integer>> doc_id_list = new ArrayList<>();
+            doc_id_list.add(new Pair<>(doc_id_value, 1));
+
+            doc_hashmap.put("doc_id", doc_id_list);
+
+            // Obtain title from document and add to hashmap
+            String doc_title_value = doc.get("id");
+
+            // Remove unnecessary data (Link to Category not band or artist)
+            if (doc_title_value.startsWith("https://en.wikipedia.org/wiki/Category:")) {
                 System.out.println("Found 'Category' in " + i + " docID -> skip");
                 continue;
             }
 
-            ArrayList<String> doc_title_list = new ArrayList<>();
-            doc_title_list.add(doc_title_value);
-
+            ArrayList<Pair<String, Integer>> doc_title_list = new ArrayList<>();
+            doc_title_list.add(new Pair<>(doc_title_value, 1));
             doc_hashmap.put("doc_title", doc_title_list);
 
             // Get content from document
@@ -92,15 +282,15 @@ public class Luc {
             String[] tokens = tokenization(content);
 
             // Get locations from tokenize content and add to hashmap (sorted by occurence)
-            ArrayList<String> doc_locations_list = (ArrayList<String>) locationFinding(tokens);
+            ArrayList<Pair<String, Integer>> doc_locations_list = (ArrayList<Pair<String, Integer>>) locationFinding(tokens);
             doc_hashmap.put("doc_location", doc_locations_list);
 
             // Get category from tokenize content and add to hashmap (sorted by occurence in category_map -> list)
-            ArrayList<String> doc_category_list = (ArrayList<String>) getBestCategory(tokens, category_map);
+            ArrayList<Pair<String, Integer>> doc_category_list = (ArrayList<Pair<String, Integer>>) getBestCategory(tokens, category_map);
             doc_hashmap.put("doc_category", doc_category_list);
 
             // Get time (date) from tokenize content and add to hasmap (sorted by occurence)
-            ArrayList<String> doc_times_list = (ArrayList<String>) timeFinding(tokens);
+            ArrayList<Pair<String, Integer>> doc_times_list = (ArrayList<Pair<String, Integer>>) timeFinding(tokens);
             doc_hashmap.put("doc_time", doc_times_list);
 
             // Add document hasmap to global list
@@ -108,38 +298,43 @@ public class Luc {
             System.out.println("Processed docID:" + i);
         }
 
-        printDocDB(document_db);
-
-        System.out.println(category_map);
-
-        /// Old code to search things -> if unnecessary remove
-//        // Create searcher
-//        IndexSearcher searcher = new IndexSearcher(reader);
-//
-//        // Prepare simple query string
-//        String querystr = "trip-hop";
-//
-//        StandardAnalyzer analyzer = new StandardAnalyzer();
-//        Query q = new QueryParser("content", analyzer).parse(querystr);
-//
-//        // Config number of output
-//        int hitsPerPage = 5;
-//
-//        // Search and obtain results
-//        TopDocs docs = searcher.search(q, hitsPerPage);
-//        ScoreDoc[] hits = docs.scoreDocs;
-//
-//        System.out.println("Found " + hits.length + " hits.");
-//        for (int i = 0; i < hits.length; ++i) {
-//            int docId = hits[i].doc;
-//            Document d = searcher.doc(docId);
-//            System.out.println((i + 1) + ". " + hits[i].score + "\t" + d.get("title") + "\t" + d.get("url"));
-//        }
-
+        return new Pair<>(document_db, category_map);
     }
 
+    private static void saveDocDB(Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> document_db_cat_map, String file_name) {
+        try {
+            File f = new File(file_name);
+            f.getParentFile().mkdirs();
+            FileOutputStream fos = new FileOutputStream(file_name);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(document_db_cat_map);
+            oos.close();
+            fos.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+        System.out.println("\n>>> Saved DB\n");
+    }
 
-    private static List<String> getBestCategory(String[] tokens, Map<String, List<String>> category_map) {
+    private static Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> loadDocDB(String file_name) {
+        Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> document_db_cat_map = new Pair<>(null, null);
+        try {
+            FileInputStream fis = new FileInputStream(file_name);
+            ObjectInputStream ois = new ObjectInputStream(fis);
+            document_db_cat_map = (Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>>) ois.readObject();
+            ois.close();
+            fis.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } catch (ClassNotFoundException c) {
+            System.out.println("Class not found");
+            c.printStackTrace();
+        }
+        System.out.println("\n>>> Loaded DB\n");
+        return document_db_cat_map;
+    }
+
+    private static List<Pair<String, Integer>> getBestCategory(String[] tokens, Map<String, List<String>> category_map) {
         // Cast to ArrayList from String[] to count occurence
         ArrayList<String> tokens_list = new ArrayList<>(Arrays.asList(tokens));
 
@@ -192,7 +387,7 @@ public class Luc {
     }
 
 
-    private static List<String> getSortedListFromHashMap(Map<String, Integer> map) {
+    private static List<Pair<String, Integer>> getSortedListFromHashMap(Map<String, Integer> map) {
         // Create array and sort by value
         Object[] a = map.entrySet().toArray();
         Arrays.sort(a, new Comparator() {
@@ -204,14 +399,34 @@ public class Luc {
 
         // Create array of locations in proper order
         // If counter is the same position is like in original text
-        List<String> list = new ArrayList<>();
+        List<Pair<String, Integer>> list = new ArrayList<>();
         for (Object e : a) {
-            list.add(((Map.Entry<String, Integer>) e).getKey());
+            list.add(new Pair<>(((Map.Entry<String, Integer>) e).getKey(), ((Map.Entry<String, Integer>) e).getValue()));
         }
         return list;
     }
 
-    private static List<String> locationFinding(String[] tokens) throws IOException {
+    private static Map<String, Integer> getSortedMap(Map<String, Integer> map) {
+        // Create array and sort by value
+        Object[] a = map.entrySet().toArray();
+        Arrays.sort(a, new Comparator() {
+            public int compare(Object o1, Object o2) {
+                return ((Map.Entry<String, Integer>) o2).getValue()
+                        .compareTo(((Map.Entry<String, Integer>) o1).getValue());
+            }
+        });
+
+        // Create array of locations in proper order
+        // If counter is the same position is like in original text
+        Map<String, Integer> sorted_map = new LinkedHashMap<>();
+        for (Object e : a) {
+            sorted_map.put(((Map.Entry<String, Integer>) e).getKey(), ((Map.Entry<String, Integer>) e).getValue());
+        }
+        return sorted_map;
+    }
+
+
+    private static List<Pair<String, Integer>> locationFinding(String[] tokens) throws IOException {
         File modelfile = new File(LOCATION_MODEL);
         TokenNameFinderModel namemodel = new TokenNameFinderModel(modelfile);
         NameFinderME namefind = new NameFinderME(namemodel);
@@ -239,7 +454,7 @@ public class Luc {
         return getSortedListFromHashMap(locations_map);
     }
 
-    private static List<String> timeFinding(String[] tokens) throws IOException {
+    private static List<Pair<String, Integer>> timeFinding(String[] tokens) throws IOException {
         // Cast to ArrayList from String[] to count occurence
         ArrayList<String> tokens_list = new ArrayList<>(Arrays.asList(tokens));
 
@@ -254,7 +469,9 @@ public class Luc {
             // Obtain date
             String new_s = null;
             if (p_long.matcher(s).matches()) {
-                new_s = s;
+                if(s.compareTo("2051") < 0 && s.compareTo("1000") > 0) {
+                    new_s = s;
+                }
             } else if (p_short.matcher(s).matches()) {
                 new_s = s.replace("'", "19"); // Replace apostrof with 19 ('68 > 1968)
             }
@@ -274,10 +491,10 @@ public class Luc {
         return getSortedListFromHashMap(date_occurence_map);
     }
 
-    private static void printDocDB(List<LinkedHashMap<String, List<String>>> document_db) {
-        for (LinkedHashMap<String, List<String>> doc_map : document_db) {
+    private static void printDocDB(List<LinkedHashMap<String, List<Pair<String, Integer>>>> document_db) {
+        for (LinkedHashMap<String, List<Pair<String, Integer>>> doc_map : document_db) {
             // System.out.println(Collections.singletonList(doc_map));
-            for (Map.Entry<String, List<String>> entry : doc_map.entrySet()) {
+            for (Map.Entry<String, List<Pair<String, Integer>>> entry : doc_map.entrySet()) {
                 System.out.println(entry.getKey() + " = " + entry.getValue());
             }
 
