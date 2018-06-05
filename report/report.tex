@@ -1,0 +1,53 @@
+
+\documentclass[journal]{IEEEtran}
+\usepackage{blindtext}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{polski}
+\usepackage[utf8x]{inputenc}
+\usepackage{tikz} % To generate the plot from csv
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+
+\pgfplotsset{compat=newest} % Allows to place the legend below plot
+\usepgfplotslibrary{units} % Allows to enter the units nicely
+
+
+\begin{document}
+\title{Przeszukiwanie zespołów muzycznych w poszukiwaniu ciekawych zaleźności}
+\author{
+    Mateusz Kruszyna \texttt{inf127252}\\
+    \and
+    Bartosz Górka \texttt{inf127228}\\
+    \and
+    Jarosław Skrzypczak \texttt{inf127265}
+}
+\markboth{Wyszukiwanie i przetwarzanie zasobów informacyjnych, 12 Czerwiec 2018}{}
+\maketitle
+\IEEEpeerreviewmaketitle
+
+\section{Wprowadzenie}
+Poniżej zostanie pokazane po krótce jak to zrobiliśmy i co nam wyszło ; )
+
+\section{Pozyskanie danych}
+Do pozyskania danych posłużył nam \textit{solr} oraz \textit{nutch}.
+Z parunastu początkowych stron na \textit{wikipedii} pomijając niepotrzebne linki
+ zostało pozykasne 1050 dokumnetów na temat zespołów muzycznych.
+
+\section{Wykresy}
+% if first time is "\newcommand" if others is "\renewcommand"
+
+\newcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues_rock.csv}
+\newcommand{\titleplot}{My first plot}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues.csv}
+\renewcommand{\titleplot}{My first plot22}
+\input{my_plot.tex}
+
+
+\section{Conclusion}
+\blindtext
+
+
+\end{document}

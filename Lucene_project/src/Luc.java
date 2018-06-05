@@ -129,20 +129,22 @@ public class Luc {
                         // Get every location with occurence
                         for (Pair<String, Integer> loc : x.get("doc_location")) {
                             String location = loc.getKey();
-                            Integer occurence = loc.getValue();
-                            if (cat_loc.containsKey(cat_name)) { // has category inside
-                                // If location in map plus one, else add new entry
-                                if (cat_loc.get(cat_name).containsKey(location)) { // has location inside
-                                    int temp_counter = cat_loc.get(cat_name).get(location);
-                                    temp_counter++;
-                                    cat_loc.get(cat_name).put(location, temp_counter);
-                                } else { // no location inside
-                                    cat_loc.get(cat_name).put(location, occurence);
+                            if(!location.equals("Random")) {
+                                Integer occurence = loc.getValue();
+                                if (cat_loc.containsKey(cat_name)) { // has category inside
+                                    // If location in map plus one, else add new entry
+                                    if (cat_loc.get(cat_name).containsKey(location)) { // has location inside
+                                        int temp_counter = cat_loc.get(cat_name).get(location);
+                                        temp_counter++;
+                                        cat_loc.get(cat_name).put(location, temp_counter);
+                                    } else { // no location inside
+                                        cat_loc.get(cat_name).put(location, occurence);
+                                    }
+                                } else { // no category inside
+                                    Map<String, Integer> tmp2 = new HashMap<>();
+                                    tmp2.put(location, occurence);
+                                    cat_loc.put(cat_name, tmp2);
                                 }
-                            } else { // no category inside
-                                Map<String, Integer> tmp2 = new HashMap<>();
-                                tmp2.put(location, occurence);
-                                cat_loc.put(cat_name, tmp2);
                             }
                         }
 
@@ -181,7 +183,7 @@ public class Luc {
     private static void mapExportCSV(Map<String,Map<String,Integer>> map,String name_prefix,String field_name) throws FileNotFoundException {
 
         for (Map.Entry<String,Map<String,Integer>> x: map.entrySet()) {
-            // One file for every gropus
+            // One file for every groups
             String key = x.getKey();
             Map<String,Integer> value = x.getValue();
 
@@ -195,12 +197,23 @@ public class Luc {
             sb.append(',');
             sb.append("Occur");
 
+            int counter = 1;
+            int max_counter = 10; // firs 10 occurence (max)
             Map<String,Integer> sorted_value = getSortedMap(value);
             for (Map.Entry<String, Integer> y: sorted_value.entrySet()) {
-                sb.append("\n");
-                sb.append(y.getKey());
-                sb.append(",");
-                sb.append(y.getValue().toString());
+                if(counter > max_counter){
+                    break;
+                }
+                if(y.getValue() > 1) { //if something is only 1 time it is too low for us
+                    String tmp_key = y.getKey();
+                    tmp_key = tmp_key.replaceAll(",", "");
+                    sb.append("\n");
+                    sb.append(String.format("{%s}", tmp_key));
+                    sb.append(",");
+                    sb.append(y.getValue().toString());
+                    counter++;
+                }
+
             }
 
             pw.write(sb.toString());
@@ -214,6 +227,15 @@ public class Luc {
         // List of music category
         Map<String, List<String>> category_map = new HashMap<>();
 
+        // List of wrong word in category
+        List<String> bad_word = new ArrayList<>();
+        bad_word.add("by");
+        bad_word.add("genre");
+        bad_word.add("navigational");
+        bad_word.add("(genre)");
+        bad_word.add("musicians");
+        bad_word.add("nationality");
+        bad_word.add("body");
         // First loop to obtain all category
         for (int i = 0; i < reader.maxDoc(); i++) {
             // Read document from index
@@ -226,11 +248,15 @@ public class Luc {
             if (doc_title_value.startsWith("https://en.wikipedia.org/wiki/Category:")) {
                 // Get category map<name, list of part name> from title (url)
                 List<String> tmp_cat_list = new ArrayList<>(extractCategory(doc_title_value));
-                String tmp_cat_key = String.join("_", tmp_cat_list);
-                category_map.put(tmp_cat_key, tmp_cat_list);
-                System.out.println("Found 'Category' in " + i + " docID, with name: " + tmp_cat_key);
+                if(Collections.disjoint(tmp_cat_list,bad_word) && i < 20){ // cut to first 20 documents because rest of category are subcategory of this
+                    String tmp_cat_key = String.join("_", tmp_cat_list);
+                    category_map.put(tmp_cat_key, tmp_cat_list);
+                    System.out.println("Found 'Category' in " + i + " docID, with name: " + tmp_cat_key);
+                }
+
             }
         }
+        System.out.println(category_map.size());
 
 
         System.out.println("\n>>> Classifying documents!\n");
