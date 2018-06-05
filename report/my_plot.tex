@@ -1,0 +1,18 @@
+\begin{figure}[h!]
+  \begin{center}
+      \pgfplotstableread[col sep=comma,]{\namefile}\datatable
+  \begin{tikzpicture}
+  \begin{axis}[
+      ybar, ymin=0,
+      ylabel=Occurence,
+      xlabel=Location,
+      xtick=data,
+      xticklabels from table={\datatable}{Location},
+      xticklabel style = {rotate=90,anchor=east}
+      ]
+      \addplot table [x expr=\coordindex, y=Occur,col sep=comma]{\datatable};
+  \end{axis}
+  \end{tikzpicture}
+    \caption{\titleplot}
+  \end{center}
+\end{figure}
