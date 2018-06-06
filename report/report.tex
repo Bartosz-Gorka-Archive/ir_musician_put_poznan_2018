@@ -4,6 +4,7 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{polski}
+\usepackage{float}
 \usepackage[utf8x]{inputenc}
 \usepackage{tikz} % To generate the plot from csv
 \usepackage{pgfplots}
@@ -30,19 +31,46 @@
 Poniżej zostanie pokazane po krótce jak to zrobiliśmy i co nam wyszło ; )
 
 \section{Pozyskanie danych}
-Do pozyskania danych posłużył nam \textit{solr} oraz \textit{nutch}.
-Z parunastu początkowych stron na \textit{wikipedii} pomijając niepotrzebne linki
- zostało pozykasne 1050 dokumnetów na temat zespołów muzycznych.
+Do pozyskania danych posłużył nam \textit{Apache solr} oraz \textit{Apache nutch}.
+Z czternastu początkowych stron w domenie \textit{https://en.wikipedia.org/wiki/}
+oraz skonfigurowanie silnika szukającego tak, aby pomijał niepotrzebne linki
+(zewnętrzne strony, linkki do edycji, linki do mediawiki itp...)
+zostało pozykasne 1050 dokumnetów na temat zespołów muzycznych.
+Niestety 42 linki z powyższej kolekcji prowadzą do podkategorii, które to nie zostały
+uwzględnione w przeszukiwaniu.
+
+Drugim elementem było wgranie stworzonego indeksu do \textit{Apache Lucene}, w którym
+dokonaliśmy analizy dokumentów. Z każdego dokumnetu pobraliśmy takie dane jak tytuł,
+listę najczęstszych lokalizacji, listę najczęściej występującyh lat (tylko rok) oraz
+dopasowaliśmy najbardziej prawdobodobną kategorię do każdego dokumnetu
+z prędzej wygenerowanej listy możlwiych kategorii.
+
+Krótko opisują cały mechanizm, to tytuł został wyciągnięty z linku do strony na wikipedii.
+Zawartość dokumnetu (plik html) został poddany tokenizacji.
+Z pomocą modułu do rozpoznawania lokalizacji zostały wybrane najczęściej występujące lokalizacje.
+Kategorie zostały rozbite na pojedyńcze słowa kluczowe i zostały zliczone
+sumaryczne wystąpienia każdego z tych słow w dokumencie.
+Pozyskiwanie dat (rok) z tekstu niestety nie okazało się dobre przy wykorzystaniu gotowego modelu
+z pakietu \textit{OpenNLP}. W zamian tego zostały wykorzystane wyrażenia regularne
+do wykrycia prostych zapisów lat (format XXXX oraz 'XX dla lat 19XX).
+
+Dla wszystkich powyższych danych zostały zastosowane proste metody eliminacji błędnych danych
+np. liczba 0001 jako rok, liczba 9988 jako rok, wyrażenie 'Random' jako lokalizacja,
+słowa 'by' lub 'genre' w nazwie kategorii.
+
+Eksport danych do formatu csv został ograniczony do pierwszych 10 wystąpień danej zmiennej (czytelność wykresu),
+a także do danych, które występują więcej niż 1 raz w tekście.
 
 \section{Wykresy}
 % if first time is "\newcommand" if others is "\renewcommand"
 
 \newcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues_rock.csv}
-\newcommand{\titleplot}{My first plot}
+\newcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'American blues rock'}
+\newcommand{\labx}{Lokacje}
+\newcommand{\laby}{Wystąpienia}
 \input{my_plot.tex}
-
 \renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues.csv}
-\renewcommand{\titleplot}{My first plot22}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'American blues'}
 \input{my_plot.tex}
 
 

@@ -77,7 +77,7 @@ public class Luc {
             System.exit(-1);
         }
         System.out.println(">>>> Obtain database and catogry mapping!\n\n");
-
+        System.out.printf(">> Map category size:%d%n", category_map.size());
         exportToCSV(document_db, category_map);
 
     }
