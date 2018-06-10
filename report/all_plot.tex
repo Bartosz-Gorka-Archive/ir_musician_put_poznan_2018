@@ -1,0 +1,208 @@
+
+\documentclass[journal]{IEEEtran}
+\usepackage{blindtext}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{polski}
+\usepackage{float}
+\usepackage[utf8x]{inputenc}
+\usepackage{tikz} % To generate the plot from csv
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+
+\pgfplotsset{compat=newest} % Allows to place the legend below plot
+\usepgfplotslibrary{units} % Allows to enter the units nicely
+
+
+\begin{document}
+
+\section{Wykresy lokalizacji}
+% if first time is "\newcommand" if others is "\renewcommand"
+
+\newcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues_rock.csv}
+\newcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'American blues rock'}
+\newcommand{\column}{Location}
+\newcommand{\labx}{Lokacje}
+\newcommand{\laby}{Wystąpienia}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'American blues'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'American instrumental'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_British_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'British instrumental'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Canadian_Celtic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Canadian Celtic'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Celtic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Celtic'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Doo-wop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Doo-wop'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Electronic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Electronic'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Japanese_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Japanese instrumental'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_K-pop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'K-pop'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Latin.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Latin'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Punk_blues.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Punk blues'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Trip_hop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Trip hop'}
+\input{my_plot.tex}
+
+\pagebreak
+\newpage \newpage
+\section{Wykresy czasu (lata/rok)}
+% if first time is "\newcommand" if others is "\renewcommand"
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_American_blues_rock.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'American blues rock'}
+\renewcommand{\column}{Year}
+\renewcommand{\labx}{Czas (rok)}
+\renewcommand{\laby}{Wystąpienia}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_American_blues.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'American blues'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_American_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'American instrumental'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_British_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'British instrumental'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_Canadian_Celtic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'Canadian Celtic'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_Celtic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'Celtic'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_Doo-wop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'Doo-wop'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_Electronic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'Electronic'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_Japanese_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'Japanese instrumental'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_K-pop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'K-pop'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_Latin.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'Latin'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_Punk_blues.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'Punk blues'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_Trip_hop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'Trip hop'}
+\input{my_plot.tex}
+
+\pagebreak
+\newpage \newpage
+\section{Wykresy imion i nazwisk}
+% if first time is "\newcommand" if others is "\renewcommand"
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_American_blues_rock.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'American blues rock'}
+\renewcommand{\column}{Name}
+\renewcommand{\labx}{Imiona i nazwiska}
+\renewcommand{\laby}{Wystąpienia}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_American_blues.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'American blues'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_American_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'American instrumental'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_British_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'British instrumental'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_Canadian_Celtic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'Canadian Celtic'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_Celtic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'Celtic'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_Doo-wop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'Doo-wop'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_Electronic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'Electronic'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_Japanese_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'Japanese instrumental'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_K-pop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'K-pop'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_Latin.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'Latin'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_Punk_blues.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'Punk blues'}
+\input{my_plot.tex}
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_Trip_hop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'Trip hop'}
+\input{my_plot.tex}
+
+\pagebreak
+\newpage \newpage
+\section{Wykresy globalnych imion i nazwisk}
+% if first time is "\newcommand" if others is "\renewcommand"
+
+\renewcommand{\namefile}{../Lucene_project/results/global_name/global_name.csv}
+\renewcommand{\titleplot}{Globalnie najcześciej występujące imiona i nazwiska}
+\renewcommand{\column}{Name}
+\renewcommand{\labx}{Imiona i nazwiska}
+\renewcommand{\laby}{Wystąpienia}
+\input{my_plot.tex}
+\end{document}

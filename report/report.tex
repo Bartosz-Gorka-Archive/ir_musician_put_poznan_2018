@@ -33,30 +33,44 @@ Poniżej zostanie pokazane po krótce jak to zrobiliśmy i co nam wyszło ; )
 \section{Pozyskanie danych}
 Do pozyskania danych posłużył nam \textit{Apache solr} oraz \textit{Apache nutch}.
 Z czternastu początkowych stron w domenie \textit{https://en.wikipedia.org/wiki/}
-oraz skonfigurowanie silnika szukającego tak, aby pomijał niepotrzebne linki
+oraz skonfigurowaniu silnika szukającego tak, aby pomijał niepotrzebne linki
 (zewnętrzne strony, linkki do edycji, linki do mediawiki itp...)
 zostało pozykasne 1050 dokumnetów na temat zespołów muzycznych.
-Niestety 42 linki z powyższej kolekcji prowadzą do podkategorii, które to nie zostały
-uwzględnione w przeszukiwaniu.
+Niestety 42 linki z powyższej kolekcji prowadzą do podkategorii, które nie zostały
+uwzględnione w przeszukiwaniu, lecz strony znajdujące się w tych podkategoriach już tak.
 
 Drugim elementem było wgranie stworzonego indeksu do \textit{Apache Lucene}, w którym
 dokonaliśmy analizy dokumentów. Z każdego dokumnetu pobraliśmy takie dane jak tytuł,
-listę najczęstszych lokalizacji, listę najczęściej występującyh lat (tylko rok) oraz
+listę najczęstszych lokalizacji, listę najczęściej występującyh lat (tylko rok),
+listę najczęściej występujących imion i nazwisk oraz
 dopasowaliśmy najbardziej prawdobodobną kategorię do każdego dokumnetu
 z prędzej wygenerowanej listy możlwiych kategorii.
 
-Krótko opisują cały mechanizm, to tytuł został wyciągnięty z linku do strony na wikipedii.
-Zawartość dokumnetu (plik html) został poddany tokenizacji.
-Z pomocą modułu do rozpoznawania lokalizacji zostały wybrane najczęściej występujące lokalizacje.
-Kategorie zostały rozbite na pojedyńcze słowa kluczowe i zostały zliczone
-sumaryczne wystąpienia każdego z tych słow w dokumencie.
-Pozyskiwanie dat (rok) z tekstu niestety nie okazało się dobre przy wykorzystaniu gotowego modelu
-z pakietu \textit{OpenNLP}. W zamian tego zostały wykorzystane wyrażenia regularne
-do wykrycia prostych zapisów lat (format XXXX oraz 'XX dla lat 19XX).
-
-Dla wszystkich powyższych danych zostały zastosowane proste metody eliminacji błędnych danych
-np. liczba 0001 jako rok, liczba 9988 jako rok, wyrażenie 'Random' jako lokalizacja,
-słowa 'by' lub 'genre' w nazwie kategorii.
+Cały mechanizm pozyskiwania danych do wykresów zostanie krótko opisany poniżej.
+\begin{itemize}
+\item Tytuł został wyciągnięty z linku do strony na wikipedii (końcówka linku).
+\item Zawartość dokumentu (plik html) został poddany tokenizacji, a następnie wykonane dalsze czynności
+\item Z pomocą modułu do rozpoznawania lokalizacji \textit{OpenNLP}
+zostały wybrane najczęściej występujące lokalizacje. Pominięta została lokalizacja "Random",
+która naszym zdaniem była błednie rozpoznawana.
+\item Kategorie zostały wybrane z przeszukiwanej bazy, dzięki charakterystycznym
+schematom linków, które zawierały słowo kluczowe \textit{category:}.
+Gdy w nazwie kategorii pojawiło się jedno ze słów zakazanych ("by","genre","navigational",
+"(genre)","musicians","nationality","body"), to taka nazwa nie została uznana za właściwą nazwę.
+Po takim zabiegu, aby wyszukać do jakiej kategorii należy dokument, dla każdego dokumentu
+kategorie zostały rozbite na pojedyńcze słowa kluczowe i zliczone
+sumaryczne wystąpienia każdego z tych słów w dokumencie.
+\item Pozyskiwanie dat (rok) z tekstu niestety nie okazało się dobre przy wykorzystaniu gotowego modelu
+z pakietu \textit{OpenNLP}. W zamian tego zostały wykorzystane proste wyrażenia regularne
+do wykrycia dwóch zapisów zapisów lat (format XXXX oraz 'XX dla lat 19XX).
+Ograniczonych od dołu przez rok 1000 a od góry przez 2051.
+\item Wyszukiwanie imion i nazwisk zostało zaprogramowane dzięki  przygotowanemu modułowi z \textit{OpenNLP}.
+Tym razem także wyniki nie były jednoznaczne i wkradało się dużo różnych nie właściwych form. Z tego powodu
+wszelkie imiona i nazwiska, które zawierały jakieś słowo z listy ("Tools What","Permanent","Page",
+"The","Music","In","Retrieved","American") nie zostały uwzględnione w zliczaniu.
+\item Wszelkie słowa, które były filtrem w jakimkolwiek zliczaniu czy wybieraniu danych, zostały odkryte
+z teksu poprzez pełne przeszukiwanie i zaobserwowanie danych anomalii.
+\end{itemize}
 
 Eksport danych do formatu csv został ograniczony do pierwszych 10 wystąpień danej zmiennej (czytelność wykresu),
 a także do danych, które występują więcej niż 1 raz w tekście.
@@ -66,6 +80,7 @@ a także do danych, które występują więcej niż 1 raz w tekście.
 
 \newcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues_rock.csv}
 \newcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'American blues rock'}
+\newcommand{\column}{Location}
 \newcommand{\labx}{Lokacje}
 \newcommand{\laby}{Wystąpienia}
 \input{my_plot.tex}

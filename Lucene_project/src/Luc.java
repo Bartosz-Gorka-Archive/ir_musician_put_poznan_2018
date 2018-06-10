@@ -28,6 +28,7 @@ public class Luc {
 
     private static String TOKENIZER_MODEL = "models/en-token.bin";
     private static String LOCATION_MODEL = "models/en-ner-location.bin";
+    private static String NAME_MODEL = "models/en-ner-person.bin";
     private static String DB_FILE_NAME = "results/doc_db.ser";
 
     public static void main(String[] args) throws IOException, ParseException {
@@ -96,8 +97,21 @@ public class Luc {
         sb_group_cat.append("Best Category");
 
 
+        // List of wrong word in category
+        List<String> bad_word_name = new ArrayList<>();
+        bad_word_name.add("Tools What");
+        bad_word_name.add("Permanent");
+        bad_word_name.add("Page");
+        bad_word_name.add("The");
+        bad_word_name.add("Music");
+        bad_word_name.add("In");
+        bad_word_name.add("Retrieved");
+        bad_word_name.add("American");
+
         Map<String,Map<String, Integer>> cat_loc = new HashMap<>();
         Map<String,Map<String, Integer>> cat_time = new HashMap<>();
+        Map<String,Map<String, Integer>> cat_names = new HashMap<>();
+        Map<String, Integer> global_name = new HashMap<>();
 
         for (LinkedHashMap<String, List<Pair<String, Integer>>> x : document_db) {
             for (Map.Entry<String, List<Pair<String, Integer>>> y : x.entrySet()) {
@@ -167,6 +181,39 @@ public class Luc {
                                 cat_time.put(cat_name, tmp2);
                             }
                         }
+
+                        // Get every name with occurence (with no bad word from name list)
+                        for (Pair<String, Integer> names : x.get("doc_name")) {
+                            String name = names.getKey();
+                            Integer occurence = names.getValue();
+                            ArrayList<String> tmpList = new ArrayList<>();
+                            tmpList.add(name);
+                            if(Collections.disjoint(tmpList,bad_word_name)) {
+                                if (cat_names.containsKey(cat_name)) { // has category inside
+                                    // If time in map plus one, else add new entry
+                                    if (cat_names.get(cat_name).containsKey(name)) { // has time inside
+                                        int temp_counter = cat_names.get(cat_name).get(name);
+                                        temp_counter++;
+                                        cat_names.get(cat_name).put(name, temp_counter);
+                                    } else { // no time inside
+                                        cat_names.get(cat_name).put(name, occurence);
+                                    }
+                                } else { // no category inside
+                                    Map<String, Integer> tmp2 = new HashMap<>();
+                                    tmp2.put(name, occurence);
+                                    cat_names.put(cat_name, tmp2);
+                                }
+
+                                // for global occurence
+                                if (global_name.containsKey(name)){
+                                    int temp_counter = global_name.get(name);
+                                    temp_counter++;
+                                    global_name.put(name, temp_counter);
+                                } else {
+                                    global_name.put(name, occurence);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -177,9 +224,45 @@ public class Luc {
 
         mapExportCSV(cat_loc,"cat_loc","Location");
         mapExportCSV(cat_time,"cat_time","Year");
+        mapExportCSV(cat_names,"cat_name","Name");
+        singleMapExportCSV(global_name,"global_name","Name");
 
     }
 
+    private static void singleMapExportCSV(Map<String,Integer> map, String name_prefix,String field_name) throws FileNotFoundException {
+        String file_csv = "results/"+name_prefix+"/"+name_prefix+".csv";
+        File file = new File(file_csv);
+        file.getParentFile().mkdirs();
+        PrintWriter pw = new PrintWriter(file);
+        StringBuilder sb = new StringBuilder();
+        // Header in csv file
+        sb.append(field_name);
+        sb.append(',');
+        sb.append("Occur");
+
+        int counter = 1;
+        int max_counter = 10; // firs 10 occurence (max)
+        Map<String,Integer> sorted_value = getSortedMap(map);
+        for (Map.Entry<String, Integer> y: sorted_value.entrySet()) {
+            if(counter > max_counter){
+                break;
+            }
+            if(y.getValue() > 1) { //if something is only 1 time it is too low for us
+                String tmp_key = y.getKey();
+                tmp_key = tmp_key.replaceAll(",", "");
+                sb.append("\n");
+                sb.append(String.format("{%s}", tmp_key));
+                sb.append(",");
+                sb.append(y.getValue().toString());
+                counter++;
+            }
+
+        }
+
+        pw.write(sb.toString());
+        pw.close();
+        System.out.println(">>> Save to " + file_csv);
+    }
     private static void mapExportCSV(Map<String,Map<String,Integer>> map,String name_prefix,String field_name) throws FileNotFoundException {
 
         for (Map.Entry<String,Map<String,Integer>> x: map.entrySet()) {
@@ -319,6 +402,10 @@ public class Luc {
             ArrayList<Pair<String, Integer>> doc_times_list = (ArrayList<Pair<String, Integer>>) timeFinding(tokens);
             doc_hashmap.put("doc_time", doc_times_list);
 
+            // Get name from tokenize content and add to hasmap (sorted by occurence)
+            ArrayList<Pair<String, Integer>> doc_name_list = (ArrayList<Pair<String, Integer>>) nameFinding(tokens);
+            doc_hashmap.put("doc_name", doc_name_list);
+
             // Add document hasmap to global list
             document_db.add(doc_hashmap);
             System.out.println("Processed docID:" + i);
@@ -451,6 +538,33 @@ public class Luc {
         return sorted_map;
     }
 
+    private static List<Pair<String, Integer>> nameFinding(String[] tokens) throws IOException {
+        File modelfile = new File(NAME_MODEL);
+        TokenNameFinderModel namemodel = new TokenNameFinderModel(modelfile);
+        NameFinderME namefind = new NameFinderME(namemodel);
+        Span[] names = namefind.find(tokens);
+
+        // Map for count occurence of lcoations and then sort it
+        Map<String, Integer> names_map = new HashMap<>();
+
+        // Get string from Span[]
+        String[] names_string = Span.spansToStrings(names, tokens);
+        ArrayList<String> names_list = new ArrayList<>(Arrays.asList(names_string));
+
+        for (String new_name_string : names_list) {
+
+            // If location in map plus one, else add new entry
+            if (names_map.containsKey(new_name_string)) {
+                int temp_counter = names_map.get(new_name_string);
+                temp_counter++;
+                names_map.put(new_name_string, temp_counter);
+            } else {
+                names_map.put(new_name_string, 1);
+            }
+        }
+
+        return getSortedListFromHashMap(names_map);
+    }
 
     private static List<Pair<String, Integer>> locationFinding(String[] tokens) throws IOException {
         File modelfile = new File(LOCATION_MODEL);
@@ -479,6 +593,8 @@ public class Luc {
 
         return getSortedListFromHashMap(locations_map);
     }
+
+
 
     private static List<Pair<String, Integer>> timeFinding(String[] tokens) throws IOException {
         // Cast to ArrayList from String[] to count occurence

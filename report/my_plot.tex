@@ -7,7 +7,7 @@
       ylabel=\laby,
       xlabel=\labx,
       xtick=data,
-      xticklabels from table={\datatable}{Location},
+      xticklabels from table={\datatable}{\column},
       xticklabel style = {rotate=90,anchor=east}
       ]
       \addplot table [x expr=\coordindex, y=Occur,col sep=comma]{\datatable};
