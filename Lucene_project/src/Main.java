@@ -26,7 +26,7 @@ public class Main {
         System.out.println("In index are " + indexReader.numDocs() + " docs. (In solr are 1050, should be the same!)\n");
 
         // Create / load documents database
-        List<LinkedHashMap<String, List<Pair<String, Integer>>>> documentDb;
+        List<LinkedHashMap<String, List<Pair<String, Integer>>>> documentsDb;
         Map<String, List<String>> categoryMap;
 
         DatabaseManager databaseManager = new DatabaseManager();
@@ -37,30 +37,30 @@ public class Main {
             // it is limited only to two values
             tmp = databaseManager.loadDocumentsDb();
             // List for all document
-            documentDb = tmp.getKey();
+            documentsDb = tmp.getKey();
             // List of music category
             categoryMap = tmp.getValue();
         } else { // we have no file with database
             // get document_db and category mapping from reader
             // it is limited only to two values
-            tmp = new DocumentFinder().getDocDB(indexReader);
+            tmp = new DocumentFinder().createDocumentsDb(indexReader);
             // List for all document
-            documentDb = tmp.getKey();
+            documentsDb = tmp.getKey();
             // List of music category
             categoryMap = tmp.getValue();
             System.out.println("__________________________________________________");
             databaseManager.saveDocumentsDb(tmp);
         }
-        if (categoryMap == null || documentDb == null) {
+        if (categoryMap == null || documentsDb == null) {
             System.out.println("\n\n----Something goes wrong with create/load documents database----\n\n");
             System.exit(-1);
         }
         System.out.println(">>>> Obtain database and category mapping!\n\n");
         System.out.printf(">> Map category size:%d%n", categoryMap.size());
-        new Exporter().exportToCSV(documentDb, categoryMap);
+        new Exporter().exportToCSV(documentsDb, categoryMap);
     }
 
-    private static boolean isFileDBCorrect(File databaseFile){
+    private static boolean isFileDBCorrect(File databaseFile) {
         return databaseFile.exists() && !databaseFile.isDirectory();
     }
 
