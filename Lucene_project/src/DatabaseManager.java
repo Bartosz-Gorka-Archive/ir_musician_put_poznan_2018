@@ -9,36 +9,34 @@ public class DatabaseManager {
 
     public static final String DB_FILE_NAME = "results/doc_db.ser";
 
-    public void saveDocDB(Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> document_db_cat_map) {
+    public void saveDocumentsDb(Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> documentDbCatMap) {
         try {
-            File f = new File(DB_FILE_NAME);
-            f.getParentFile().mkdirs();
-            FileOutputStream fos = new FileOutputStream(DB_FILE_NAME);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(document_db_cat_map);
-            oos.close();
-            fos.close();
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
+            new File(DB_FILE_NAME).getParentFile().mkdirs();
+            FileOutputStream fileOutputStream = new FileOutputStream(DB_FILE_NAME);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+            objectOutputStream.writeObject(documentDbCatMap);
+            objectOutputStream.flush();
+            objectOutputStream.close();
+            fileOutputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         System.out.println("\n>>> Saved DB\n");
     }
 
-    public Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> loadDocDB() {
-        Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> document_db_cat_map = new Pair<>(null, null);
+    public Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> loadDocumentsDb() {
+        Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> documentDbCatMap = new Pair<>(null, null);
         try {
-            FileInputStream fis = new FileInputStream(DB_FILE_NAME);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-            document_db_cat_map = (Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>>) ois.readObject();
-            ois.close();
-            fis.close();
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        } catch (ClassNotFoundException c) {
+            ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(DB_FILE_NAME));
+            documentDbCatMap = (Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>>) objectInputStream.readObject();
+            objectInputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             System.out.println("Class not found");
-            c.printStackTrace();
+            e.printStackTrace();
         }
         System.out.println("\n>>> Loaded DB\n");
-        return document_db_cat_map;
+        return documentDbCatMap;
     }
 }

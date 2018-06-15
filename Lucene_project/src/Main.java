@@ -26,7 +26,7 @@ public class Main {
         System.out.println("In index are " + indexReader.numDocs() + " docs. (In solr are 1050, should be the same!)\n");
 
         // Create / load documents database
-        List<LinkedHashMap<String, List<Pair<String, Integer>>>> documentDB;
+        List<LinkedHashMap<String, List<Pair<String, Integer>>>> documentDb;
         Map<String, List<String>> categoryMap;
 
         DatabaseManager databaseManager = new DatabaseManager();
@@ -35,9 +35,9 @@ public class Main {
         if (isFileDBCorrect(new File(DatabaseManager.DB_FILE_NAME))) {
             // get document_db and category mapping from reader
             // it is limited only to two values
-            tmp = databaseManager.loadDocDB();
+            tmp = databaseManager.loadDocumentsDb();
             // List for all document
-            documentDB = tmp.getKey();
+            documentDb = tmp.getKey();
             // List of music category
             categoryMap = tmp.getValue();
         } else { // we have no file with database
@@ -45,19 +45,19 @@ public class Main {
             // it is limited only to two values
             tmp = new DocumentFinder().getDocDB(indexReader);
             // List for all document
-            documentDB = tmp.getKey();
+            documentDb = tmp.getKey();
             // List of music category
             categoryMap = tmp.getValue();
             System.out.println("__________________________________________________");
-            databaseManager.saveDocDB(tmp);
+            databaseManager.saveDocumentsDb(tmp);
         }
-        if (categoryMap == null || documentDB == null) {
+        if (categoryMap == null || documentDb == null) {
             System.out.println("\n\n----Something goes wrong with create/load documents database----\n\n");
             System.exit(-1);
         }
         System.out.println(">>>> Obtain database and category mapping!\n\n");
         System.out.printf(">> Map category size:%d%n", categoryMap.size());
-        new Exporter().exportToCSV(documentDB, categoryMap);
+        new Exporter().exportToCSV(documentDb, categoryMap);
     }
 
     private static boolean isFileDBCorrect(File databaseFile){
