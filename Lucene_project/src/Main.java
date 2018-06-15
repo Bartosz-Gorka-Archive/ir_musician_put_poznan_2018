@@ -19,53 +19,49 @@ public class Main {
     public static void main(String[] args) throws IOException, ParseException {
 
         // Read index from nutch
-        Directory index = FSDirectory.open(Paths.get("./data/index"));
-        IndexReader reader = DirectoryReader.open(index);
+        Directory directory = FSDirectory.open(Paths.get("./data/index"));
+        IndexReader indexReader = DirectoryReader.open(directory);
 
         // Check how many docs are in index
-        int index_size = reader.numDocs();
-        System.out.println("In index are " + index_size + " docs. (In solr are 1050, should be the same!)\n");
+        System.out.println("In index are " + indexReader.numDocs() + " docs. (In solr are 1050, should be the same!)\n");
 
         // Create / load documents database
-        List<LinkedHashMap<String, List<Pair<String, Integer>>>> document_db = null;
-        Map<String, List<String>> category_map = null;
-        File f = new File(DatabaseManager.DB_FILE_NAME); // if we have file with database
+        List<LinkedHashMap<String, List<Pair<String, Integer>>>> documentDB;
+        Map<String, List<String>> categoryMap;
 
-        if (f.exists() && !f.isDirectory()) {
+        DatabaseManager databaseManager = new DatabaseManager();
+        Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> tmp;
+
+        if (isFileDBCorrect(new File(DatabaseManager.DB_FILE_NAME))) {
             // get document_db and category mapping from reader
             // it is limited only to two values
-            Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> temp = new DatabaseManager().loadDocDB();
-
+            tmp = databaseManager.loadDocDB();
             // List for all document
-            document_db = temp.getKey();
-
+            documentDB = tmp.getKey();
             // List of music category
-            category_map = temp.getValue();
-
+            categoryMap = tmp.getValue();
         } else { // we have no file with database
-
             // get document_db and category mapping from reader
             // it is limited only to two values
-
-            Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> temp = new DocumentFinder().getDocDB(reader);
-
+            tmp = new DocumentFinder().getDocDB(indexReader);
             // List for all document
-            document_db = temp.getKey();
-
+            documentDB = tmp.getKey();
             // List of music category
-            category_map = temp.getValue();
-
+            categoryMap = tmp.getValue();
             System.out.println("__________________________________________________");
-            new DatabaseManager().saveDocDB(temp);
-
+            databaseManager.saveDocDB(tmp);
         }
-        if (category_map == null || document_db == null) {
+        if (categoryMap == null || documentDB == null) {
             System.out.println("\n\n----Something goes wrong with create/load documents database----\n\n");
             System.exit(-1);
         }
-        System.out.println(">>>> Obtain database and catogry mapping!\n\n");
-        System.out.printf(">> Map category size:%d%n", category_map.size());
-        new Exporter().exportToCSV(document_db, category_map);
+        System.out.println(">>>> Obtain database and category mapping!\n\n");
+        System.out.printf(">> Map category size:%d%n", categoryMap.size());
+        new Exporter().exportToCSV(documentDB, categoryMap);
+    }
+
+    private static boolean isFileDBCorrect(File databaseFile){
+        return databaseFile.exists() && !databaseFile.isDirectory();
     }
 
     private static void printDocDB(List<LinkedHashMap<String, List<Pair<String, Integer>>>> document_db) {
@@ -74,7 +70,6 @@ public class Main {
             for (Map.Entry<String, List<Pair<String, Integer>>> entry : doc_map.entrySet()) {
                 System.out.println(entry.getKey() + " = " + entry.getValue());
             }
-
             // Print new line for readability
             System.out.println();
         }
