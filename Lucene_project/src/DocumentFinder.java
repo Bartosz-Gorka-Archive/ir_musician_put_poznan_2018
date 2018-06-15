@@ -14,9 +14,9 @@ import java.util.regex.Pattern;
 
 public class DocumentFinder {
 
-    private static String TOKENIZER_MODEL = "models/en-token.bin";
-    private static String LOCATION_MODEL = "models/en-ner-location.bin";
-    private static String NAME_MODEL = "models/en-ner-person.bin";
+    private static final String TOKENIZER_MODEL = "models/en-token.bin";
+    private static final String LOCATION_MODEL = "models/en-ner-location.bin";
+    private static final String NAME_MODEL = "models/en-ner-person.bin";
 
     public Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> getDocDB(IndexReader reader) throws IOException {
 

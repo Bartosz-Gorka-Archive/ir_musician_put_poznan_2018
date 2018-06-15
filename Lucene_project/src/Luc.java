@@ -26,8 +26,6 @@ import java.util.regex.Pattern;
 
 public class Luc {
 
-    private static String DB_FILE_NAME = "results/doc_db.ser";
-
     public static void main(String[] args) throws IOException, ParseException {
 
         // Read index from nutch
@@ -41,12 +39,12 @@ public class Luc {
         // Create / load documents database
         List<LinkedHashMap<String, List<Pair<String, Integer>>>> document_db = null;
         Map<String, List<String>> category_map = null;
-        File f = new File(DB_FILE_NAME); // if we have file with database
+        File f = new File(DatabaseManager.DB_FILE_NAME); // if we have file with database
 
         if (f.exists() && !f.isDirectory()) {
             // get document_db and category mapping from reader
             // it is limited only to two values
-            Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> temp = loadDocDB(DB_FILE_NAME);
+            Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> temp = new DatabaseManager().loadDocDB();
 
             // List for all document
             document_db = temp.getKey();
@@ -68,7 +66,7 @@ public class Luc {
             category_map = temp.getValue();
 
             System.out.println("__________________________________________________");
-            saveDocDB(temp, DB_FILE_NAME);
+            new DatabaseManager().saveDocDB(temp);
 
         }
         if (category_map == null || document_db == null) {
@@ -79,40 +77,6 @@ public class Luc {
         System.out.printf(">> Map category size:%d%n", category_map.size());
         new Exporter().exportToCSV(document_db, category_map);
     }
-
-    private static void saveDocDB(Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> document_db_cat_map, String file_name) {
-        try {
-            File f = new File(file_name);
-            f.getParentFile().mkdirs();
-            FileOutputStream fos = new FileOutputStream(file_name);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(document_db_cat_map);
-            oos.close();
-            fos.close();
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        }
-        System.out.println("\n>>> Saved DB\n");
-    }
-
-    private static Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> loadDocDB(String file_name) {
-        Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>> document_db_cat_map = new Pair<>(null, null);
-        try {
-            FileInputStream fis = new FileInputStream(file_name);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-            document_db_cat_map = (Pair<List<LinkedHashMap<String, List<Pair<String, Integer>>>>, Map<String, List<String>>>) ois.readObject();
-            ois.close();
-            fis.close();
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        } catch (ClassNotFoundException c) {
-            System.out.println("Class not found");
-            c.printStackTrace();
-        }
-        System.out.println("\n>>> Loaded DB\n");
-        return document_db_cat_map;
-    }
-
 
     private static void printDocDB(List<LinkedHashMap<String, List<Pair<String, Integer>>>> document_db) {
         for (LinkedHashMap<String, List<Pair<String, Integer>>> doc_map : document_db) {
