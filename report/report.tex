@@ -1,5 +1,5 @@
 
-\documentclass[journal]{IEEEtran}
+\documentclass[journal]{article}
 \usepackage{blindtext}
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -9,7 +9,15 @@
 \usepackage{tikz} % To generate the plot from csv
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
-
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=25mm,
+ top=25mm,
+ right=25mm,
+ bottom=25mm,
+ }
 \pgfplotsset{compat=newest} % Allows to place the legend below plot
 \usepgfplotslibrary{units} % Allows to enter the units nicely
 
@@ -25,57 +33,58 @@
 }
 \markboth{Wyszukiwanie i przetwarzanie zasobów informacyjnych, 12 Czerwiec 2018}{}
 \maketitle
-\IEEEpeerreviewmaketitle
+%\IEEEpeerreviewmaketitle
 
 \section{Wprowadzenie}
-Poniżej zostanie pokazane po krótce jak to zrobiliśmy i co nam wyszło ; )
+W realizowanym eksperymencie podjęliśmy się analizy zależności jakie można odkryć
+ w danych dotyczących zespołów muzycznych.
+Postanowiliśmy ograniczyć się do dwóch kategorii,
+aby przedstawić wybrane charakterystyki, bez nadmiarowych analiz.
 
 \section{Pozyskanie danych}
-Do pozyskania danych posłużył nam \textit{Apache solr} oraz \textit{Apache nutch}.
-Z czternastu początkowych stron w domenie \textit{https://en.wikipedia.org/wiki/}
-oraz skonfigurowaniu silnika szukającego tak, aby pomijał niepotrzebne linki
-(zewnętrzne strony, linkki do edycji, linki do mediawiki itp...)
-zostało pozykasne 1050 dokumnetów na temat zespołów muzycznych.
-Niestety 42 linki z powyższej kolekcji prowadzą do podkategorii, które nie zostały
-uwzględnione w przeszukiwaniu, lecz strony znajdujące się w tych podkategoriach już tak.
 
-Drugim elementem było wgranie stworzonego indeksu do \textit{Apache Lucene}, w którym
-dokonaliśmy analizy dokumentów. Z każdego dokumnetu pobraliśmy takie dane jak tytuł,
-listę najczęstszych lokalizacji, listę najczęściej występującyh lat (tylko rok),
-listę najczęściej występujących imion i nazwisk oraz
-dopasowaliśmy najbardziej prawdobodobną kategorię do każdego dokumnetu
-z prędzej wygenerowanej listy możlwiych kategorii.
+Do pozyskania danych do analizy zastosowano  \textit{Apache Solr} oraz  \textit{Apache Nutch}.
+Postanowiono wykorzystać strony  \textit{Wikipedii} i czternaście z nich wstawić
+do zbioru startowych odnośników. Koniecznym było zagwarantowanie poprawnych
+ustawień w silnikach przetwarzających, aby ignorowały one niepotrzebne odnośniki
+takie jak zewnętrzne strony, załączniki, historie edycji bądź też odnośniki do mediawiki.
 
-Cały mechanizm pozyskiwania danych do wykresów zostanie krótko opisany poniżej.
+Po przygotowaniu środowiska, udało się pozyskać informacje w postaci 1050 dokumentów
+na temat zespołów muzycznych. Niestety, po wstępnej analizie zebranych informacji
+okazało się, że część odnośników prowadziła do podkategorii, których zespoły zostały
+uwzględnione w bazie. Postanowiono wyeliminować strony podkategorii.
+
+Tak uzyskany indeks (zbudowanego z wykorzystaniem  \textit{Apache Solr} +  \textit{Apache Nutch})
+poddano analizie z wykorzystaniem  \textit{Apache Lucene}. Z każdego dokumentu pobrano następujące informacje:
 \begin{itemize}
-\item Tytuł został wyciągnięty z linku do strony na wikipedii (końcówka linku).
-\item Zawartość dokumentu (plik html) został poddany tokenizacji, a następnie wykonane dalsze czynności
-\item Z pomocą modułu do rozpoznawania lokalizacji \textit{OpenNLP}
-zostały wybrane najczęściej występujące lokalizacje. Pominięta została lokalizacja "Random",
-która naszym zdaniem była błednie rozpoznawana.
-\item Kategorie zostały wybrane z przeszukiwanej bazy, dzięki charakterystycznym
-schematom linków, które zawierały słowo kluczowe \textit{category:}.
-Gdy w nazwie kategorii pojawiło się jedno ze słów zakazanych ("by","genre","navigational",
-"(genre)","musicians","nationality","body"), to taka nazwa nie została uznana za właściwą nazwę.
-Po takim zabiegu, aby wyszukać do jakiej kategorii należy dokument, dla każdego dokumentu
-kategorie zostały rozbite na pojedyńcze słowa kluczowe i zliczone
-sumaryczne wystąpienia każdego z tych słów w dokumencie.
-\item Pozyskiwanie dat (rok) z tekstu niestety nie okazało się dobre przy wykorzystaniu gotowego modelu
-z pakietu \textit{OpenNLP}. W zamian tego zostały wykorzystane proste wyrażenia regularne
+\item Tytuł, wycięty z adresu URL strony
+\item Zawartość dokumentu (plik html) został poddany tokenizacji
+\item Lokalizacje - uzyskane za pomocą modułu do rozpoznawania lokalizacji \textit{OpenNLP}.
+\item Kategorie zostały wybrane z przeszukiwanej bazy, dzięki charakterystycznym schematom linków,
+które zawierały słowo kluczowe `category:`
+\item Pozyskiwanie dat (rok) z tekstu niestety nie okazało się poprawne przy wykorzystaniu
+gotowego modelu z pakietu \textit{OpenNLP}. Jako alternatywę wykorzystano wyrażenia regularne
 do wykrycia dwóch zapisów zapisów lat (format XXXX oraz 'XX dla lat 19XX).
-Ograniczonych od dołu przez rok 1000 a od góry przez 2051.
-\item Wyszukiwanie imion i nazwisk zostało zaprogramowane dzięki  przygotowanemu modułowi z \textit{OpenNLP}.
-Tym razem także wyniki nie były jednoznaczne i wkradało się dużo różnych nie właściwych form. Z tego powodu
-wszelkie imiona i nazwiska, które zawierały jakieś słowo z listy ("Tools What","Permanent","Page",
-"The","Music","In","Retrieved","American") nie zostały uwzględnione w zliczaniu.
-\item Wszelkie słowa, które były filtrem w jakimkolwiek zliczaniu czy wybieraniu danych, zostały odkryte
-z teksu poprzez pełne przeszukiwanie i zaobserwowanie danych anomalii.
+Ponadto ograniczono lata do zakresu [1000, 2051]
+\item Wyszukiwanie imion i nazwisk zostało zrealizowane dzięki wykorzystaniu \textit{OpenNLP}.
+ Także tym razem wyniki nie były jednoznaczne i zawierały wiele niewłaściwych form.
+Z tego powodu wszelkie imiona i nazwiska, które zawierały jakieś słowo z listy
+("Tools What", "Permanent", "Page", "The", "Music", "In", "Retrieved", "American") nie zostały uwzględnione w zliczaniu.
+\item Wszelkie słowa, które były filtrem w jakimkolwiek zliczaniu
+czy wybieraniu danych, zostały odkryte z teksu poprzez pełne przeszukiwanie
+i zaobserwowanie danych anomalii.
 \end{itemize}
 
-Eksport danych do formatu csv został ograniczony do pierwszych 10 wystąpień danej zmiennej (czytelność wykresu),
-a także do danych, które występują więcej niż 1 raz w tekście.
+\section{Wstępne oczyszczenie danych}
+W lokalizacjach pominięto `Random` którą uznano jako błędnie rozpoznawaną.
+Gdy w nazwie kategorii pojawiło się jedno ze słów zakazanych
+("by", "genre", "navigational", "(genre)", "musicians", "nationality", "body"),
+ to taka nazwa nie była brana pod uwagę. Po takim zabiegu, aby wyszukać do jakiej
+kategorii należy dokument, dla każdego dokumentu słowa kluczowe w postaci
+pojedynczych wyrazów z kategorii zostały zliczone sumaryczne wystąpienia
+każdego z tych słów w dokumencie.
 
-\section{Wykresy}
+\section{Analiza wykresów}
 % if first time is "\newcommand" if others is "\renewcommand"
 
 \newcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues_rock.csv}
@@ -84,13 +93,102 @@ a także do danych, które występują więcej niż 1 raz w tekście.
 \newcommand{\labx}{Lokacje}
 \newcommand{\laby}{Wystąpienia}
 \input{my_plot.tex}
-\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues.csv}
-\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'American blues'}
+Zgodnie z oczekiwaniami, dla zespołu odnoszącego się do Stanów Zjednoczonych,
+taka fraza (United States) pojawiała się najczęściej. Co jest zaskakującego -
+bardzo wiele wystąpień odnotowała Europa. Również i ostatnia w prezentowanym
+zestawieniu Wielka Brytania (England) cieszyła się popularnością mimo braku powiązania wprost.
+Być może fraza `American blues rock` odniosła się także do koncertów w Europie
+ i ich powiązań z europejskimi wykonawcami. New York (pozycja 3), California (pozycja 4),
+ Los Angeles (pozycja 6), New York City (pozycja 7) to przykłady lokalizacji których
+ spodziewaliśmy się osiągnąć w analizie lokalizacji.
+
+ \renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_blues.csv}
+ \renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'American blues'}
 \input{my_plot.tex}
+Podobnie jak w przypadku analizy dla American blues rock, również i American blues
+ w znaczącej większości odnoszą się do Stanów Zjednoczonych. W tym przypadku mamy
+zmianę ustawienia lokalizacji w stosunku do wcześniej charakteryzowanego Rysunek 1.
+Co ciekawe, w zestawieniu pojawiła się fraza `Rock` która jest dość sporna - teoretycznie
+może odnosić się zarówno do lokalizacji (góra / skała jak i stylu jakim jest rock).
 
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_American_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'American instrumental'}
+\input{my_plot.tex}
+W przypadku analizy lokalizacji jakie zostały wyszukane dla `American instrumental`
+poza oczywistymi trendami zaprezentowanymi również w przypadku Rysunek 1 oraz Rysunek 2,
+ mamy niespodziewane wystąpienie `Japan` czyli odniesienia do Japonii.
+ Ciężko scharakteryzować przyczynę tego wystąpienia, może to być nawiązanie do
+koncertów w tamtym kraju, bądź także i wszelkie wzorce czerpane z tego kraju.
 
-\section{Conclusion}
-\blindtext
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_British_instrumental.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'British instrumental'}
+\input{my_plot.tex}
+Ciekawe wzorce odnoszące się do lokalizacji pojawiają się dla `British instrumental`.
+Tutaj przeważa wystąpienie Londynu oraz odnośniki do europejskich nazw tj. Wielka Brytania,
+Europa, Zjednoczone Królestwo, Francja czy Irlandia.
+Na uwagę zasługują jednak odnośniki do Kalifornii, Stanów Zjednoczonych oraz Nowego Jorku -
+które mogą wynikać z koncertowania na terenie USA przez zespoły.
+Jednakże najbardziej zaskakującym jest ponownie odnośnik do Japonii.
+Podobnie jak w przypadku analizy dla Rysunek 3. Tutaj również ciężko scharakteryzować
+ dlaczego tak licznie wystąpił odnośnik do kraju kwitnącej wiśni.
 
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Canadian_Celtic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Canadian Celtic'}
+\input{my_plot.tex}
+Analizując `Canadian Celtic` możemy zauważyć jak wielkie znaczenie ma drugie określenie we
+frazie czyli nawiązanie do Celtów. W tym przypadku zgodnie z oczekiwaniami,
+na dwóch pierwszych miejscach mamy Kanadę oraz Stany Zjednoczone.
+Jednakże kolejne dwie pozycji (oraz dodatkowo Dublin) to ewidentny
+przykład nawiązania do krajów związanych z kulturą celtycką czyli Irlandii oraz Szkocji.
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Celtic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Celtic'}
+\input{my_plot.tex}
+Dla samej frazy `Celtic` mamy bardzo liczne nawiązania do Irlandii oraz Szkocji.
+Ponadto pojawiają się europejskie lokalizacje. Dużym zaskoczeniem niewątpliwie
+jest Australia, która raczej nie kojarzy się w ogóle z omawianym określeniem.
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Doo-wop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Doo-wop'}
+\input{my_plot.tex}
+Dla grupy `Doo-wop` obserwujemy głównie nawiązania do Nowego Jorku oraz Stanów Zjednoczonych.
+Ponadto pojawia się Bronx czyli być może jest to grupa z tego obszaru.
+ Zaskakującymi są jednakże bardzo liczne wystąpienia Love, Love „ oraz Rock - które lokalizacjami nie są.
+Wykorzystany model do rozpoznawania lokalizacji (NLP) zwrócił takie wyniki, choć ich jakość wydaje się wątpliwa.
+
+\renewcommand{\namefile}{../Lucene_project/results/cat_loc/cat_loc_Electronic.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lokalizacje dla grupy 'Electronic'}
+\input{my_plot.tex}
+Dla `Electronic` obserwujemy nawiązania do krajów, a w dwóch przypadkach do miast
+(Londyn oraz Los Angeles). Trend na tym wykresie jest najmniej zaskakujący ze
+wszystkich do tej pory scharakteryzowanych.
+
+\renewcommand{\column}{Year}
+\renewcommand{\labx}{Czas (rok)}
+\renewcommand{\laby}{Wystąpienia}
+\renewcommand{\namefile}{../Lucene_project/results/cat_time/cat_time_Doo-wop.csv}
+\renewcommand{\titleplot}{Najcześciej występujące lata dla grupy 'Doo-wop'}
+\input{my_plot.tex}
+Analizując lata dla poszczególnych grup można zaobserwować bardzo zbliżone do siebie wystąpienia,
+ewentualnie minimalna przewaga któregoś z lat. W przypadku tej grupy mamy jednakże
+bardzo liczne wystąpienia lat .50 i .60 XX wieku - najprawdopodobniej
+ szczyt popularności przypadał właśnie na ten okres.
+
+ \renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_American_blues_rock.csv}
+ \renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'American blues rock'}
+ \renewcommand{\column}{Name}
+ \renewcommand{\labx}{Imiona i nazwiska}
+ \renewcommand{\laby}{Wystąpienia}
+ \input{my_plot.tex}
+ \renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_American_blues.csv}
+ \renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'American blues'}
+ \input{my_plot.tex}
+ \renewcommand{\namefile}{../Lucene_project/results/cat_name/cat_name_American_instrumental.csv}
+ \renewcommand{\titleplot}{Najcześciej występujące imiona i nazwiska dla grupy 'American instrumental'}
+ \input{my_plot.tex}
+Analizując jednocześnie odniesienia do tych trzech amerykańskich grup możemy zaobserwować ten sam wzorzec -
+ jakie pierwsze trzy najliczniejsze imiona pojawiają się męskie `John`, `David` oraz kobiece `Tina`.
+Starając się zorientować nad poprawnością wyników, warto skupić się i zastanowić samemu -
+jakich artystów się kojarzy. Zdecydowanie te imiona będą najpopularniejsze (najprawdopodobniej).
 
 \end{document}
